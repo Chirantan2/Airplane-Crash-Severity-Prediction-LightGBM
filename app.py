@@ -59,26 +59,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-
-
-
-Severity = ['Sunrisers Hyderabad',
-         'Mumbai Indians',
-         'Royal Challengers Bangalore',
-         'Kolkata Knight Riders',
-         'Kings XI Punjab',
-         'Chennai Super Kings',
-         'Rajasthan Royals',
-         'Delhi Capitals']
-
-cities = ['Hyderabad', 'Bangalore', 'Mumbai', 'Indore', 'Kolkata', 'Delhi',
-          'Chandigarh', 'Jaipur', 'Chennai', 'Cape Town', 'Port Elizabeth',
-          'Durban', 'Centurion', 'East London', 'Johannesburg', 'Kimberley',
-          'Bloemfontein', 'Ahmedabad', 'Cuttack', 'Nagpur', 'Dharamsala',
-          'Visakhapatnam', 'Pune', 'Raipur', 'Ranchi', 'Abu Dhabi',
-          'Sharjah', 'Mohali', 'Bengaluru']
-
 pipe = pickle.load(open("trained_model.sav", 'rb'))
 
 
@@ -144,8 +124,8 @@ with open('style.css') as f:
 
 col1, col2, col3 = st.columns(3)
 col1.metric("Number of accidents monitored :-", "9509", "")
-col2.metric("Rows :-", "9509", "")
-col3.metric("Columns", "12", "")
+# col2.metric("Rows :-", "9509", "")
+# col3.metric("Columns", "12", "")
 
 # CHARTS SHOWING PIE
 data2= pd.read_csv('train.csv')
@@ -158,21 +138,86 @@ incidents2 = data2.groupby("Turbulence_In_gforces")["Severity"].count()
 # plt.ylabel("Number of crashes")
 # plt.show()
 
-tab1,tab2, tab3, tab4 = st.tabs(["Bar Graph", "Line Graph", "Pie Chart", "Box Plot"])
+#second database for charts
+df = pd.read_csv("Airplane_Crashes_and_Fatalities_Since_1908.csv")
 
-with tab1:
-    st.bar_chart(incidents, use_container_width=True)
-with tab2:
-    st.line_chart(incidents2)
+df['Date'] = pd.to_datetime(df['Date'])
+df['Year'] = df['Date'].dt.strftime('%Y')
+
+df.rename(columns = {'Flight #': 'Flights'}, inplace = True)
+
+by_year = df.groupby('Year')["Flights"].count()
+
+# Temp = df.groupby(df['Year'])[['Year']].count() #Temp is going to be temporary data frame 
+# Temp = Temp.rename(columns={"Year": "Count"})
+
+# plt.figure(figsize=(12,6))
+# plt.style.use('bmh')
+# plt.plot(Temp.index, 'Count', data=Temp, color='blue', marker = ".", linewidth=1)
+# plt.xlabel('Year', fontsize=10)
+# plt.ylabel('Count', fontsize=10)
+# plt.title('Count of accidents by Year', loc='Center', fontsize=14)
+# plt.show()
+
+Fatalities = df.groupby('Year')['Fatalities'].count()
+
+st.write("Number of Fatalities by Year")
+st.line_chart(Fatalities)
+
+# df.Operator = df.Operator.str.upper()
+# df.Operator = df.Operator.replace('A B AEROTRANSPORT', 'AB AEROTRANSPORT')
+
+operator_counts = df['Operator'].value_counts().reset_index().head(10)
+operator_counts.columns = ['Operator', 'count']
+
+# create an Altair chart using the operator counts
+chart = alt.Chart(operator_counts).mark_bar().encode(
+    x=alt.X('count', title='Count'),
+    y=alt.Y('Operator', title='Operator')
+).properties(
+    title='Number of Fatalities by Operator'
+)
+
+# display the chart using st.altair_chart()
+
+st.altair_chart(chart, use_container_width=True)
+
+
+
+
+st.write("Number of Airplane Crashes by Year")
+st.line_chart(by_year)
+
+with st.container():
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("Number of Airplane Crashes by Year")
+        st.line_chart(by_year)
+    with col2:
+        st.bar_chart(incidents, use_container_width=True)
+with st.container():
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("Chart 1")
+        st.bar_chart(incidents, use_container_width=True)
+    with col2:
+        st.write("Chart 2")
+        st.bar_chart(incidents, use_container_width=True)
+
+
+
+st.bar_chart(incidents, use_container_width=True)
+
+st.line_chart(incidents2)
     
-with tab3:
-    fig = px.pie(incidents, values=incidents.values, names=incidents.index)
-    st.plotly_chart(fig)
 
-with tab4:
-    severity_counts = data2.groupby("Severity").count()["Accident_ID"]
-    fig2 = px.box(data2, x="Severity", y="Accident_ID")
-    st.plotly_chart(fig2)
+fig = px.pie(incidents, values=incidents.values, names=incidents.index)
+st.plotly_chart(fig)
+
+
+severity_counts = data2.groupby("Severity").count()["Accident_ID"]
+fig2 = px.box(data2, x="Severity", y="Accident_ID")
+st.plotly_chart(fig2)
 
     
 # def Pie_Graph(target,score,overs,wickets):
